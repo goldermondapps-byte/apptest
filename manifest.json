@@ -1,0 +1,21 @@
+{
+    "name": "Cuaderno de Phantom Blade",
+    "short_name": "Cuaderno",
+    "description": "Cuaderno de laboratorio para proyectos y descubrimientos.",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#1a1a1a",
+    "icons": [
+        {
+            "src": "https://placehold.co/192x192/00ff9d/1a1a1a?text=PB&font=ebgaramond",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "https://placehold.co/512x512/00ff9d/1a1a1a?text=PB&font=ebgaramond",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ]
+}
