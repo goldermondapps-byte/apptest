@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <title>Cuaderno de Phantom Blade</title>
+    
+    <!-- Metaetiqueta para el color de la barra de estado en móviles -->
+    <meta name="theme-color" content="#1a1a1a">
+    
+    <!-- Enlace al Manifest (para la PWA) -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- 1. Cargar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Cargar Fuentes (Estilo "Frankenstein" / Académico) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        // Configuración de Tailwind para usar las nuevas fuentes
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['EB Garamond', 'serif'],
+                    },
+                    colors: {
+                        'phant-black': '#1a1a1a',
+                        'phant-gray': '#2b2b2b',
+                        'phant-paper': '#f5f1e8',
+                        'phant-text': '#dcdcdc',
+                        'phant-accent': '#00ff9d', // Un verde "eléctrico"
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 3. Estilos de la App -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, h4, .font-serif {
+            font-family: 'EB Garamond', serif;
+        }
+        
+        /* Estilos del Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2b2b2b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5a5a5a;
+        }
+
+        /* Clases de utilidad */
+        .project-item.active {
+            background-color: #3a3a3a;
+            border-left-color: #00ff9d;
+        }
+
+        /* --- NUEVA Animación de "Brillo" --- */
+        @keyframes glow {
+          0%, 100% { text-shadow: 0 0 5px #00ff9d, 0 0 10px #00ff9d; }
+          50% { text-shadow: 0 0 10px #00ff9d, 0 0 20px #00ff9d; }
+        }
+        .animated-name {
+          animation: glow 2.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-phant-black text-phant-text h-full overflow-hidden">
+
+    <!-- Contenedor Principal de la App (Layout de 2 columnas) -->
+    <div class="flex h-screen">
+
+        <!-- Columna Izquierda: Lista de Proyectos -->
+        <aside class="w-1/3 max-w-sm h-full flex flex-col border-r border-phant-gray shadow-lg">
+            <!-- Encabezado de Proyectos -->
+            <header class="p-4 border-b border-phant-gray">
+                <h1 class="text-3xl font-serif text-center">Cuaderno de</h1>
+                <!-- AÑADIDA CLASE .animated-name -->
+                <h2 class="text-4xl font-serif font-bold text-center text-phant-accent animated-name">Phantom Blade</h2>
+            </header>
+            
+            <!-- Controles de Proyectos -->
+            <div class="p-4 flex gap-3">
+                <!-- AÑADIDAS CLASES DE TRANSICIÓN/TRANSFORMACIÓN -->
+                <button id="new-project-btn" class="flex-1 bg-phant-accent text-phant-black font-bold py-2 px-4 rounded-lg shadow-md hover:brightness-110 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95">
+                    Nuevo Proyecto
+                </button>
+                
+                <!-- NUEVO BOTÓN DE CARGAR (IMPORTAR) -->
+                <button id="import-btn" title="Cargar Cuaderno" class="flex-shrink-0 bg-phant-gray text-phant-accent p-2 rounded-lg hover:bg-gray-700 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                </button>
+                <!-- Input de archivo oculto que usará el botón de cargar -->
+                <input type="file" id="file-importer" class="hidden" accept=".html">
+
+                <!-- AÑADIDAS CLASES DE TRANSICIÓN/TRANSFORMACIÓN -->
+                <button id="export-btn" title="Descargar Cuaderno" class="flex-shrink-0 bg-phant-gray text-phant-accent p-2 rounded-lg hover:bg-gray-700 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Lista de Proyectos -->
+            <nav id="project-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Los proyectos se cargarán aquí -->
+                <p id="no-projects-msg" class="text-center text-gray-500 italic p-4">No hay proyectos aún. ¡Crea uno!</p>
+            </nav>
+        </aside>
+
+        <!-- Columna Derecha: Entradas del Proyecto Seleccionado -->
+        <main id="main-content" class="w-2/3 h-full flex flex-col bg-phant-gray">
+            
+            <!-- Estado Vacío (AÑADIDA TRANSICIÓN DE OPACIDAD) -->
+            <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-center p-10 transition-opacity duration-500 ease-in-out">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13.5M8.253 18.747l7.5-7.5M8.253 6.253l7.5 7.5M3.75 12h16.5" />
+                </svg>
+                <h3 class="font-serif text-3xl mt-4 text-gray-400">Selecciona un proyecto</h3>
+                <p class="text-gray-500">O crea uno nuevo para empezar a documentar tus descubrimientos.</p>
+            </div>
+
+            <!-- Contenido del Proyecto (AÑADIDA TRANSICIÓN DE OPACIDAD) -->
+            <div id="project-content" class="hidden h-full flex-col transition-opacity duration-500 ease-in-out opacity-0">
+                <!-- Encabezado del Proyecto -->
+                <header class="p-5 border-b border-gray-700 bg-phant-black shadow-md">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 id="project-title" class="text-4xl font-serif font-bold text-phant-accent"></h2>
+                            <p id="project-description" class="text-lg text-gray-400 italic"></p>
+                        </div>
+                        <!-- AÑADIDAS CLASES DE TRANSICIÓN/TRANSFORMACIÓN -->
+                        <button id="delete-project-btn" class="bg-red-800 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95">
+                            Eliminar Proyecto
+                        </button>
+                    </div>
+                </header>
+                
+                <!-- Lista de Entradas -->
+                <div id="entry-list" class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <!-- Las entradas del proyecto se cargarán aquí -->
+                </div>
+
+                <!-- Formulario para Nueva Entrada -->
+                <footer class="p-6 border-t border-gray-700 bg-phant-black">
+                    <form id="new-entry-form" class="space-y-4">
+                        <textarea id="entry-content" rows="3" class="w-full p-3 bg-phant-gray border border-gray-600 rounded-lg text-phant-text focus:outline-none focus:ring-2 focus:ring-phant-accent" placeholder="Escribe tu nota, descubrimiento o aprendizaje..." required></textarea>
+                        
+                        <div class="flex gap-4">
+                            <input type="url" id="entry-media" class="flex-1 w-full p-3 bg-phant-gray border border-gray-600 rounded-lg text-phant-text focus:outline-none focus:ring-2 focus:ring-phant-accent" placeholder="https://... (Enlace a imagen o video - opcional)">
+                            
+                            <select id="entry-type" class="bg-phant-gray border border-gray-600 rounded-lg text-phant-text p-3 focus:outline-none focus:ring-2 focus:ring-phant-accent">
+                                <option value="Nota">Nota</option>
+                                <option value="Descubrimiento">Descubrimiento</option>
+                                <option value="Aprendizaje">Aprendizaje</option>
+                                <option value="Experimento">Experimento</option>
+                            </select>
+
+                            <!-- AÑADIDAS CLASES DE TRANSICIÓN/TRANSFORMACIÓN -->
+                            <button type="submit" class="bg-phant-accent text-phant-black font-bold py-3 px-6 rounded-lg hover:brightness-110 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95">
+                                Guardar Entrada
+                            </button>
+                        </div>
+                    </form>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- Plantillas Ocultas -->
+    <template id="project-item-template">
+        <!-- AÑADIDAS CLASES DE TRANSICIÓN/TRANSFORMACIÓN -->
+        <div class="project-item p-4 border-l-4 border-phant-gray rounded-r-lg cursor-pointer hover:bg-phant-gray transition-all duration-300 ease-in-out transform hover:translate-x-2">
+            <h3 class="font-serif text-2xl font-bold truncate"></h3>
+            <p class="text-sm text-gray-400 truncate"></p>
+            <span class="text-xs text-gray-500"></span>
+        </div>
+    </template>
+
+    <template id="entry-item-template">
+        <article class="entry-item bg-phant-black shadow-lg rounded-lg overflow-hidden border border-gray-700">
+            <div class="p-5">
+                <header class="flex justify-between items-center mb-3">
+                    <span class="entry-type-badge font-serif text-xl font-bold"></span>
+                    <span class="entry-date text-sm text-gray-500"></span>
+                </header>
+                <p class="entry-content text-lg text-phant-text whitespace-pre-wrap"></p>
+            </div>
+            <div class="entry-media-container">
+                <!-- Media (imagen/video) irá aquí -->
+            </div>
+            <footer class="p-3 bg-gray-800 text-right">
+                <button class="delete-entry-btn text-sm text-red-500 hover:text-red-400">Eliminar Entrada</button>
+            </footer>
+        </article>
+    </template>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Script de Registro del Service Worker ---
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js')
+                        .then((registration) => {
+                            console.log('Service Worker registrado con éxito:', registration.scope);
+                        })
+                        .catch((error) => {
+                            console.log('Error al registrar el Service Worker:', error);
+                        });
+                });
+            }
+
+            // --- Lógica Principal de la App ---
+
+            const STORAGE_KEY = 'phantomBladeProjects';
+
+            // --- Selectores del DOM ---
+            const projectList = document.getElementById('project-list');
+            const noProjectsMsg = document.getElementById('no-projects-msg');
+            const mainContent = document.getElementById('main-content');
+            const emptyState = document.getElementById('empty-state');
+            const projectContent = document.getElementById('project-content');
+            
+            // Botones
+            const newProjectBtn = document.getElementById('new-project-btn');
+            const exportBtn = document.getElementById('export-btn');
+            const importBtn = document.getElementById('import-btn'); // NUEVO
+            const fileImporter = document.getElementById('file-importer'); // NUEVO
+            const deleteProjectBtn = document.getElementById('delete-project-btn');
+
+            // Formularios
+            const newEntryForm = document.getElementById('new-entry-form');
+            
+            // Contenido del Proyecto
+            const projectTitle = document.getElementById('project-title');
+            const projectDescription = document.getElementById('project-description');
+            const entryList = document.getElementById('entry-list');
+
+            // Plantillas
+            const projectItemTemplate = document.getElementById('project-item-template');
+            const entryItemTemplate = document.getElementById('entry-item-template');
+
+            // --- Estado de la Aplicación ---
+            let db = [];
+            let currentProjectId = null;
+
+            // --- Funciones de Base de Datos (localStorage) ---
+            
+            function loadDatabase() {
+                db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            }
+
+            function saveDatabase() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+            }
+
+            // --- Funciones de Renderizado ---
+
+            function renderProjectList() {
+                projectList.innerHTML = ''; 
+                if (db.length === 0) {
+                    noProjectsMsg.classList.remove('hidden');
+                    return;
+                }
+                noProjectsMsg.classList.add('hidden');
+
+                db.forEach(project => {
+                    const projectItem = document.importNode(projectItemTemplate.content, true).firstElementChild;
+                    projectItem.querySelector('h3').textContent = project.title;
+                    projectItem.querySelector('p').textContent = project.description;
+                    projectItem.querySelector('span').textContent = `Creado: ${new Date(project.createdAt).toLocaleDateString()}`;
+                    projectItem.dataset.id = project.id;
+                    
+                    if (project.id === currentProjectId) {
+                        projectItem.classList.add('active');
+                    }
+
+                    projectItem.addEventListener('click', () => {
+                        selectProject(project.id);
+                    });
+
+                    projectList.appendChild(projectItem);
+                });
+            }
+
+            /**
+             * Muestra las entradas del proyecto seleccionado en la columna derecha.
+             * @param {string} projectId - El ID del proyecto a mostrar.
+             */
+            function selectProject(projectId) {
+                currentProjectId = projectId;
+                const project = db.find(p => p.id === projectId);
+
+                if (!project) {
+                    showEmptyState();
+                    renderProjectList();
+                    return;
+                }
+
+                // --- LÓGICA DE FUNDIDO (FADE) ---
+                emptyState.classList.add('opacity-0');
+                emptyState.classList.add('hidden');
+                projectContent.classList.remove('hidden');
+                projectContent.classList.add('flex');
+                
+                // Pequeño retraso para permitir que 'hidden' se aplique antes de cambiar la opacidad
+                setTimeout(() => {
+                    projectContent.classList.remove('opacity-0');
+                }, 10);
+                // --- FIN LÓGICA DE FUNDIDO ---
+
+
+                // Llenar datos del proyecto
+                projectTitle.textContent = project.title;
+                projectDescription.textContent = project.description;
+
+                renderEntryList(project);
+                renderProjectList(); // Re-render para marcar el proyecto 'active'
+            }
+            
+            /**
+             * Muestra el estado vacío (sin proyecto seleccionado).
+             */
+            function showEmptyState() {
+                currentProjectId = null;
+                
+                // --- LÓGICA DE FUNDIDO (FADE) ---
+                projectContent.classList.add('opacity-0');
+                projectContent.classList.add('hidden');
+                projectContent.classList.remove('flex');
+                emptyState.classList.remove('hidden');
+                
+                // Pequeño retraso para fundido de entrada
+                setTimeout(() => {
+                    emptyState.classList.remove('opacity-0');
+                }, 10);
+                // --- FIN LÓGICA DE FUNDIDO ---
+
+                renderProjectList(); // Re-render para quitar el 'active'
+            }
+
+            function renderEntryList(project) {
+                entryList.innerHTML = ''; 
+                
+                if (project.entries.length === 0) {
+                    entryList.innerHTML = `<p class="text-center text-gray-500 italic p-6">No hay entradas para este proyecto aún.</p>`;
+                    return;
+                }
+
+                project.entries.slice().reverse().forEach(entry => {
+                    const entryItem = document.importNode(entryItemTemplate.content, true).firstElementChild;
+                    const typeBadge = entryItem.querySelector('.entry-type-badge');
+                    
+                    typeBadge.textContent = entry.type;
+                    entryItem.querySelector('.entry-date').textContent = new Date(entry.createdAt).toLocaleString();
+                    entryItem.querySelector('.entry-content').textContent = entry.content;
+                    
+                    switch(entry.type) {
+                        case 'Descubrimiento': typeBadge.classList.add('text-phant-accent'); break;
+                        case 'Aprendizaje': typeBadge.classList.add('text-yellow-400'); break;
+                        case 'Experimento': typeBadge.classList.add('text-red-400'); break;
+                        default: typeBadge.classList.add('text-blue-400');
+                    }
+
+                    const mediaContainer = entryItem.querySelector('.entry-media-container');
+                    if (entry.mediaUrl) {
+                        try {
+                            const url = new URL(entry.mediaUrl);
+                            if (/\.(jpeg|jpg|gif|png|webp)$/i.test(url.pathname)) {
+                                const img = document.createElement('img');
+                                img.src = entry.mediaUrl;
+                                img.alt = "Media de la entrada";
+                                img.className = "w-full h-auto object-cover max-h-96 mt-4";
+                                img.onerror = () => { mediaContainer.innerHTML = `<p class="p-5 text-red-400">Error al cargar imagen: ${entry.mediaUrl}</p>`; };
+                                mediaContainer.appendChild(img);
+                            } else { 
+                                const link = document.createElement('a');
+                                link.href = entry.mediaUrl;
+                                link.target = "_blank";
+                                link.rel = "noopener noreferrer";
+                                link.className = "p-5 block text-blue-400 hover:underline break-all";
+                                link.textContent = `Enlace: ${entry.mediaUrl}`;
+                                mediaContainer.appendChild(link);
+                            }
+                        } catch (e) {
+                             mediaContainer.innerHTML = `<p class="p-5 text-gray-500">Enlace no válido: ${entry.mediaUrl}</p>`;
+                        }
+                    }
+
+                    entryItem.querySelector('.delete-entry-btn').addEventListener('click', () => {
+                        handleDeleteEntry(project.id, entry.id);
+                    });
+
+                    entryList.appendChild(entryItem);
+                });
+            }
+
+            // --- Manejadores de Eventos ---
+
+            newProjectBtn.addEventListener('click', () => {
+                const title = prompt("Nombre del nuevo proyecto:");
+                if (!title) return;
+                
+                const description = prompt("Describe brevemente el proyecto:");
+                
+                const newProject = {
+                    id: `proj_${Date.now()}`,
+                    title: title,
+                    description: description || "Sin descripción",
+                    createdAt: new Date().toISOString(),
+                    entries: []
+                };
+
+                db.push(newProject);
+                saveDatabase();
+                selectProject(newProject.id); 
+            });
+            
+            // --- NUEVOS MANEJADORES PARA IMPORTAR ---
+            importBtn.addEventListener('click', () => {
+                // Simula un clic en el input de archivo oculto
+                fileImporter.click();
+            });
+
+            fileImporter.addEventListener('change', (event) => {
+                handleFileUpload(event);
+            });
+            
+            /**
+             * Maneja la subida del archivo HTML de respaldo.
+             */
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file || file.type !== 'text/html') {
+                    if (file) console.log('Archivo no válido. Por favor, sube un archivo HTML exportado.');
+                    event.target.value = null; // Limpiar input
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const htmlString = e.target.result;
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(htmlString, 'text/html');
+                        
+                        const newDb = [];
+                        const projectElements = doc.querySelectorAll('section.project');
+
+                        if (projectElements.length === 0) {
+                            console.log('No se encontraron proyectos válidos en el archivo.');
+                            return; // Aquí podríamos mostrar un modal de error
+                        }
+
+                        projectElements.forEach(projectEl => {
+                            const newProject = {
+                                id: `proj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // Generar nuevo ID
+                                title: projectEl.querySelector('h2').textContent.replace('Proyecto: ', ''),
+                                description: projectEl.querySelector('p em').textContent,
+                                createdAt: projectEl.dataset.createdat || new Date().toISOString(), // Usar data attribute
+                                entries: []
+                            };
+                            
+                            projectEl.querySelectorAll('article.entry').forEach(entryEl => {
+                                const mediaEl = entryEl.querySelector('[data-mediaurl]');
+                                
+                                const newEntry = {
+                                    id: `entry_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, // Generar nuevo ID
+                                    type: entryEl.dataset.type || 'Nota',
+                                    content: entryEl.querySelector('.content').textContent,
+                                    mediaUrl: mediaEl ? mediaEl.dataset.mediaurl : null,
+                                    createdAt: entryEl.dataset.createdat || new Date().toISOString()
+                                };
+                                newProject.entries.push(newEntry);
+                            });
+                            
+                            newDb.push(newProject);
+                        });
+
+                        // Usamos prompt como confirmación temporal
+                        const confirmation = prompt(`Se encontraron ${newDb.length} proyectos. ¿Quieres REEMPLAZAR tu cuaderno actual con este contenido? Escribe "CARGAR" para confirmar.`);
+                        
+                        if (confirmation === "CARGAR") {
+                            db = newDb; // Reemplazar la base de datos actual
+                            saveDatabase();
+                            renderProjectList();
+                            showEmptyState(); // Volver al inicio
+                            console.log('¡Cuaderno cargado con éxito!');
+                        } else {
+                            console.log('Carga cancelada.');
+                        }
+
+                    } catch (err) {
+                        console.error('Error al parsear el archivo:', err);
+                        // Aquí podríamos mostrar un modal de error
+                    }
+                };
+                
+                reader.readAsText(file);
+                event.target.value = null; // Resetear input para poder cargar el mismo archivo de nuevo
+            }
+            
+            // --- FIN DE MANEJADORES PARA IMPORTAR ---
+
+            deleteProjectBtn.addEventListener('click', () => {
+                if (!currentProjectId) return;
+                
+                const project = db.find(p => p.id === currentProjectId);
+                const confirmation = prompt(`¿Seguro que quieres eliminar el proyecto "${project.title}"? Escribe "ELIMINAR" para confirmar.`);
+                
+                if (confirmation === "ELIMINAR") {
+                    db = db.filter(p => p.id !== currentProjectId);
+                    saveDatabase();
+                    showEmptyState();
+                } else if (confirmation !== null) {
+                    console.log("Confirmación incorrecta.");
+                }
+            });
+
+            newEntryForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (!currentProjectId) return;
+
+                const project = db.find(p => p.id === currentProjectId);
+                if (!project) return;
+
+                const content = document.getElementById('entry-content').value;
+                const mediaUrl = document.getElementById('entry-media').value;
+                const type = document.getElementById('entry-type').value;
+
+                if (!content) return; 
+
+                const newEntry = {
+                    id: `entry_${Date.now()}`,
+                    type: type,
+                    content: content,
+                    mediaUrl: mediaUrl.trim() || null,
+                    createdAt: new Date().toISOString()
+                };
+
+                project.entries.push(newEntry);
+                saveDatabase();
+                renderEntryList(project); 
+                
+                newEntryForm.reset();
+            });
+
+            function handleDeleteEntry(projectId, entryId) {
+                const project = db.find(p => p.id === projectId);
+                if (!project) return;
+                
+                project.entries = project.entries.filter(e => e.id !== entryId);
+                saveDatabase();
+                renderEntryList(project);
+            }
+
+            exportBtn.addEventListener('click', () => {
+                const html = generateExportHTML();
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Cuaderno_PhantomBlade_${new Date().toISOString().split('T')[0]}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            function generateExportHTML() {
+                let html = `
+                    <!DOCTYPE html>
+                    <html lang="es">
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Exportación - Cuaderno de Phantom Blade</title>
+                        <style>
+                            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; background: #f9f9f9; color: #333; max-width: 900px; margin: 20px auto; padding: 20px; }
+                            h1 { color: #111; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                            h2 { color: #444; background: #eee; padding: 10px; border-left: 5px solid #00ff9d; }
+                            h3 { color: #555; border-bottom: 1px dashed #ccc; padding-bottom: 5px; }
+                            article { background: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; padding: 15px; }
+                            p { margin-top: 0; }
+                            img { max-width: 100%; height: auto; border-radius: 4px; margin-top: 10px; }
+                            .meta { font-size: 0.9em; color: #777; }
+                            .content { white-space: pre-wrap; }
+                            .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; background: #333; color: white; font-size: 0.9em; font-weight: bold; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Cuaderno de Laboratorio de Phantom Blade</h1>
+                `;
+
+                db.forEach(project => {
+                    // AÑADIDO data-createdat para poder importar
+                    html += `
+                        <section class="project" data-createdat="${project.createdAt}">
+                            <h2>Proyecto: ${project.title}</h2>
+                            <p class="meta"><strong>Creado:</strong> ${new Date(project.createdAt).toLocaleDateString()}</p>
+                            <p><em>${project.description}</em></p>
+                            <hr>
+                    `;
+
+                    if (project.entries.length === 0) {
+                        html += `<p>No hay entradas para este proyecto.</p>`;
+                    } else {
+                        project.entries.forEach(entry => {
+                            let mediaHTML = '';
+                            if (entry.mediaUrl) {
+                                // AÑADIDO data-mediaurl para poder importar
+                                if (/\.(jpeg|jpg|gif|png|webp)$/i.test(entry.mediaUrl)) {
+                                    mediaHTML = `<div><img src="${entry.mediaUrl}" alt="Media adjunta" data-mediaurl="${entry.mediaUrl}"></div>`;
+                                } else {
+                                    mediaHTML = `<div><a href="${entry.mediaUrl}" target="_blank" rel="noopener noreferrer" data-mediaurl="${entry.mediaUrl}">Ver media adjunta</a></div>`;
+                                }
+                            }
+
+                            // AÑADIDO data-createdat y data-type para poder importar
+                            html += `
+                                <article class="entry" data-createdat="${entry.createdAt}" data-type="${entry.type}">
+                                    <h3><span class="badge" style="background-color: ${getBadgeColor(entry.type)}">${entry.type}</span></h3>
+                                    <p class="meta">${new Date(entry.createdAt).toLocaleString()}</p>
+                                    <div class="content">${escapeHTML(entry.content)}</div>
+                                    ${mediaHTML}
+                                </article>
+                            `;
+                        });
+                    }
+                    html += `</section>`;
+                });
+
+                html += `</body></html>`;
+                return html;
+            }
+            
+            function getBadgeColor(type) {
+                switch(type) {
+                    case 'Descubrimiento': return '#00ff9d';
+                    case 'Aprendizaje': return '#f5d300';
+                    case 'Experimento': return '#d92027';
+                    default: return '#3498db';
+                }
+            }
+            
+            function escapeHTML(str) {
+                if (typeof str !== 'string') return '';
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            }
+
+
+            // --- Inicialización ---
+            loadDatabase();
+            renderProjectList();
+            showEmptyState(); // Asegurarse de empezar en el estado vacío
+        });
+    </script>
+
+</body>
+</html>
+
+
